@@ -1,0 +1,62 @@
+# =========================================
+# R Project and RStudio Temporary Files
+# =========================================
+.Rhistory
+.RData
+.RDataTmp
+.Ruserdata
+.Rproj.user/
+.Rapp.history
+
+# =========================================
+# System and Editor Files
+# =========================================
+.DS_Store
+Thumbs.db
+*.tmp
+*.bak
+*.swp
+
+# =========================================
+# Output and Generated Files
+# =========================================
+# Ignore knitted reports and rendered outputs
+*.html
+*.pdf
+*.docx
+
+# Ignore plots and export folders
+plots/
+*.png
+*.jpg
+*.jpeg
+
+# =========================================
+# R Markdown Intermediate Files
+# =========================================
+*_cache/
+_cache/
+*.utf8.md
+*.knit.md
+
+# =========================================
+# Project-specific Ignored Files
+# =========================================
+# Ignore data outputs or temporary data
+data/raw/
+data/temp/
+data/*.zip
+data/*.rds
+data/*.RData
+
+# =========================================
+# Logs and Temporary Scripts
+# =========================================
+*.log
+*.tmp
+*.out
+
+# =========================================
+# Ignore virtual environment or AI assistants
+# =========================================
+.claude/

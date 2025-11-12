@@ -1,0 +1,213 @@
+---
+title: "COVID-19 Data Analysis Visualizations"
+author: "Youssef Khabir"
+date: "November 2025"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE, fig.width = 12, fig.height = 6, dpi = 300)
+
+# Load required libraries with conflict resolution
+library(tidyverse)
+library(lubridate)
+library(ggplot2)
+library(readr)
+library(stringr)
+
+# Set global options for better output
+options(scipen = 999, stringsAsFactors = FALSE)
+```
+
+# Data Loading and Processing
+
+```{r data-prep, include=FALSE}
+# Import the dataset
+covid_data <- read_csv("data/raw/owid-covid-data.csv", show_col_types = FALSE)
+
+# Data cleaning and preprocessing (simplified version)
+covid_data <- covid_data %>%
+  mutate(date = as.Date(date)) %>%
+  dplyr::filter(!is.na(location), !is.na(date)) %>%
+  dplyr::filter(location != "International" & location != "World") %>%
+  mutate(
+    total_cases = ifelse(is.na(total_cases), 0, total_cases),
+    new_cases = ifelse(is.na(new_cases), 0, new_cases),
+    total_deaths = ifelse(is.na(total_deaths), 0, total_deaths),
+    new_deaths = ifelse(is.na(new_deaths), 0, new_deaths),
+    case_fatality_rate = ifelse(total_cases > 0, (total_deaths / total_cases) * 100, 0),
+    vaccination_coverage = ifelse(population > 0, (people_fully_vaccinated / population) * 100, 0)
+  )
+```
+
+# Visualization 1: Global Daily New COVID-19 Cases
+
+```{r global-cases}
+# Global cases over time
+global_timeline <- covid_data %>%
+  group_by(date) %>%
+  summarise(
+    new_cases = sum(new_cases, na.rm = TRUE),
+    .groups = 'drop'
+)
+
+ggplot(global_timeline, aes(x = date)) +
+  geom_line(aes(y = new_cases/1000), color = "steelblue", size = 1) +
+  geom_smooth(aes(y = new_cases/1000), method = "loess", se = FALSE, color = "red") +
+  labs(
+    title = "Global Daily New COVID-19 Cases",
+    subtitle = "Thousand cases per day with trend line",
+    x = "Date",
+    y = "New Cases (thousands)"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "bottom")
+```
+
+## Key Insights:
+- Distinct pandemic waves visible over time
+- Peak periods correspond to variant emergence and spread
+- Trend line shows overall pattern of the pandemic progression
+
+---
+
+# Visualization 2: Top 10 Countries by Total Cases
+
+```{r top-countries}
+# Get top countries
+top_countries <- covid_data %>%
+  group_by(location) %>%
+  summarise(
+    total_cases = max(total_cases, na.rm = TRUE),
+    .groups = 'drop'
+  ) %>%
+  arrange(desc(total_cases)) %>%
+  head(10)
+
+ggplot(top_countries, aes(x = reorder(location, total_cases), y = total_cases/1000000)) +
+  geom_col(fill = "coral", alpha = 0.7) +
+  coord_flip() +
+  labs(
+    title = "Top 10 Countries by Total COVID-19 Cases",
+    subtitle = "As of latest data available",
+    x = "Country",
+    y = "Total Cases (millions)"
+  ) +
+  theme_minimal()
+```
+
+## Key Insights:
+- United States, India, and Brazil lead in total case counts
+- Population size correlates with total case numbers
+- European countries prominently represented in top 10
+
+---
+
+# Visualization 3: Case Fatality Rate by Continent
+
+```{r cfr-continent}
+# Case fatality rate by continent
+continent_cfr <- covid_data %>%
+  dplyr::filter(!is.na(continent), total_cases > 1000) %>%
+  group_by(continent) %>%
+  summarise(
+    avg_cfr = mean(case_fatality_rate, na.rm = TRUE),
+    .groups = 'drop'
+  )
+
+ggplot(continent_cfr, aes(x = reorder(continent, avg_cfr), y = avg_cfr)) +
+  geom_col(fill = "forestgreen", alpha = 0.7) +
+  labs(
+    title = "Average Case Fatality Rate by Continent",
+    subtitle = "For countries with 1000+ cases",
+    x = "Continent",
+    y = "Average CFR (%)"
+  ) +
+  theme_minimal() +
+  coord_flip()
+```
+
+## Key Insights:
+- Relatively consistent CFR across major continents (2-3%)
+- Variations reflect differences in healthcare capacity and population demographics
+- Lower rates in regions with younger population structures
+
+---
+
+# Visualization 4: COVID-19 Cases vs Population Density
+
+```{r density-analysis}
+# Cases vs Population Density
+density_analysis <- covid_data %>%
+  dplyr::filter(!is.na(population_density), total_cases_per_million > 0, population_density < 1000) %>%
+  group_by(location) %>%
+  summarise(
+    cases_per_million = max(total_cases_per_million, na.rm = TRUE),
+    population_density = max(population_density, na.rm = TRUE),
+    .groups = 'drop'
+  )
+
+ggplot(density_analysis, aes(x = population_density, y = cases_per_million)) +
+  geom_point(alpha = 0.4, color = "purple") +
+  geom_smooth(method = "lm", se = FALSE, color = "orange", size = 1) +
+  scale_x_log10() +
+  scale_y_log10() +
+  labs(
+    title = "COVID-19 Cases vs Population Density",
+    subtitle = "Log-log scale relationship",
+    x = "Population Density (people per km², log scale)",
+    y = "Cases per Million (log scale)"
+  ) +
+  theme_minimal()
+```
+
+## Key Insights:
+- Log-log scale reveals complex relationship between density and transmission
+- Higher density generally associated with higher per-capita cases
+- Significant variation suggests other important factors at play
+
+---
+
+# Visualization 5: Global COVID-19 Vaccination Progress
+
+```{r vaccination-progress}
+# Vaccination progress over time
+vaccination_timeline <- covid_data %>%
+  dplyr::filter(date >= "2021-01-01") %>%
+  group_by(date) %>%
+  summarise(
+    avg_vaccination_coverage = mean(vaccination_coverage, na.rm = TRUE),
+    .groups = 'drop'
+  )
+
+ggplot(vaccination_timeline, aes(x = date, y = avg_vaccination_coverage)) +
+  geom_line(color = "green", size = 1) +
+  geom_area(fill = "green", alpha = 0.3) +
+  labs(
+    title = "Global COVID-19 Vaccination Progress",
+    subtitle = "Average vaccination coverage over time",
+    x = "Date",
+    y = "Vaccination Coverage (%)"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "bottom")
+```
+
+## Key Insights:
+- Rapid vaccination uptake from 2021 onwards
+- Clear acceleration phase during global vaccine rollout
+- Plateau phase as coverage approaches saturation levels
+
+---
+
+# Summary
+
+This R Markdown document generates all five key visualizations for the COVID-19 analysis:
+
+1. **Global Daily Cases**: Shows pandemic waves and trends over time
+2. **Top Countries**: Compares total case counts across most affected nations
+3. **Case Fatality Rates**: Analyzes mortality outcomes by geographic region
+4. **Population Density**: Explores relationship between crowding and transmission
+5. **Vaccination Progress**: Tracks global immunization campaign
+
+Each visualization includes professional styling, clear labeling, and explanatory insights to support comprehensive COVID-19 analysis and reporting.
