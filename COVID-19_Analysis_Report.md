@@ -24,8 +24,8 @@ This comprehensive COVID-19 data analysis project aims to explore, clean, and an
 
 **Source**: Our World in Data (OWID)
 **Format**: CSV file
-**File Size**: ~98 MB
-**Dimensions**: 429,436 rows × 67 columns
+**File Size**: ~180 MB
+**Dimensions**: 1429,436 rows × 67 columns
 **Time Period**: January 2020 to November 2025
 **Coverage**: Global data from countries and territories worldwide
 
